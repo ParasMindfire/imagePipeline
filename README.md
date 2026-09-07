@@ -3,8 +3,7 @@
 FastAPI accepts image jobs, RabbitMQ queues them, N worker containers
 process them (blur detection via OpenCV), Postgres is the source of
 truth. See [DESIGN.md](DESIGN.md) for how exactly-once processing is
-guaranteed, [DESIGN_QA.md](DESIGN_QA.md) for detailed rationale, and
-[EDGECASE.md](EDGECASE.md) for a harsh edge-case pass.
+guaranteed.
 
 ## Prerequisites
 
@@ -33,8 +32,7 @@ The generator command produces `sample_images/` — 8 deterministic PNGs
 `scripts/generate_sample_images.py` for why: no licensing questions,
 no network dependency, byte-identical on every machine that runs it).
 `sample_images/` is gitignored on purpose; if you received this repo
-without it, either run the generator or unzip a shared copy and point
-`SAMPLE_IMAGES_DIR` in `.env` at wherever you put it.
+
 
 ## Run everything
 
@@ -82,7 +80,6 @@ Same three endpoints, set up as requests instead of curl commands:
   }
   ```
 - Expect `201 Created`: `{"id": "...", "status": "pending"}`. Copy the `id` for the next request. (Any filename from `sample_images/` works — `checkerboard_blurry.png`, `noise_sharp.png`, `gradient_smooth.png`, etc. See `scripts/generate_sample_images.py` for the full list of 8.)
-- Optional scheduled-job field (bonus, DESIGN.md §7):
   ```json
   {
     "image_path": "checkerboard_sharp.png",
@@ -103,7 +100,7 @@ Same three endpoints, set up as requests instead of curl commands:
 - Query params, all optional: `status` (`pending`/`processing`/`done`/`failed`), `limit` (capped at 100 server-side regardless of what's requested), `offset`
 - Expect `200 OK` with `{"items": [...], "total": N, "limit": 20, "offset": 0}`
 
-A bad `image_path` (e.g. `"../../etc/passwd"`) returns `400` on step 1 — that's the path-traversal guard (EDGECASE.md 1.2) rejecting it before a job is even created.
+A bad `image_path` (e.g. `"../../etc/passwd"`) returns `400` on step 1 — that's the path-traversal guard rejecting it before a job is even created.
 
 ## Run the tests
 
@@ -185,7 +182,7 @@ Prints `PASS`/`FAIL` with a summary. Verified locally: **100/100 done,
 | `RABBITMQ_DEFAULT_USER` / `RABBITMQ_DEFAULT_PASS` | RabbitMQ credentials | `jobs_app` / `change_me` |
 | `RABBITMQ_URL` | Full broker connection string | `amqp://jobs_app:change_me@rabbitmq:5672/` |
 | `SAMPLE_IMAGES_DIR` | **Host-side** folder bind-mounted into api/worker — point this at wherever you unzipped/generated the images | `./sample_images` |
-| `IMAGE_BASE_DIR` | **Container-internal** path the app resolves/validates `image_path` against (EDGECASE.md 1.2) | `/app/sample_images` |
+| `IMAGE_BASE_DIR` | **Container-internal** path the app resolves/validates `image_path` against (path-traversal guard) | `/app/sample_images` |
 | `BLUR_THRESHOLD` | Laplacian-variance cutoff for `is_blurry` | `100.0` |
 | `PROCESSING_TIMEOUT_SECONDS` | Reconciler Sweep 1 staleness threshold | `120` |
 | `RECONCILER_INTERVAL_SECONDS` | How often the reconciler loop runs | `5` |
@@ -193,7 +190,7 @@ Prints `PASS`/`FAIL` with a summary. Verified locally: **100/100 done,
 | `API_PORT` / `POSTGRES_PORT` / `RABBITMQ_PORT` / `RABBITMQ_MANAGEMENT_PORT` | Host-side port mappings | `8000` / `5432` / `5672` / `15672` |
 
 `RABBITMQ_MANAGEMENT_PORT` (15672) is a dev-only UI — don't expose it
-outside local development (EDGECASE.md 4.6).
+outside local development.
 
 ## Project structure
 

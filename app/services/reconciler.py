@@ -1,9 +1,9 @@
 """Background reconciler — DESIGN.md §5.
 
 Runs as a thread inside every worker process; no separate service, no
-leader election needed (DESIGN_QA.md Q8 — duplicate publishes from
-multiple reconciler threads are harmless, the claim UPDATE in
-job_repo.claim_job makes a duplicate a no-op).
+leader election needed — duplicate publishes from multiple reconciler
+threads are harmless, the claim UPDATE in job_repo.claim_job makes a
+duplicate a no-op.
 """
 import logging
 import threading

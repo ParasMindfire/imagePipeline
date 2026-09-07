@@ -21,8 +21,7 @@ from app.services.job_service import resolve_image_path
 
 # Docker sets HOSTNAME to the container's short ID automatically, which
 # makes it a free, already-unique per-worker identifier — no extra
-# config needed to answer "which worker handled this job" (EDGECASE.md
-# 5.1: no correlation id was the gap before this).
+# config needed to answer "which worker handled this job".
 WORKER_ID = os.environ.get("HOSTNAME", "unknown")
 
 logging.basicConfig(level=logging.INFO, format=f"%(asctime)s %(levelname)s %(name)s [worker={WORKER_ID}]: %(message)s")
@@ -93,13 +92,12 @@ def process_job(job_id: str) -> None:
 
 
 def _safe_ack(channel, delivery_tag) -> None:
-    """EDGECASE.md 4.5 — acking on a channel the broker already force-
-    closed (e.g. the consumer-timeout case from 2.6) throws. By the
-    time this is called the job's outcome is already durably committed
-    to Postgres, so a failed ack just means the broker may redeliver
-    this message later — and that redelivery is already a safe no-op
-    per the claim mechanics (DESIGN.md §3). Log it, don't crash the
-    consumer loop over it."""
+    """Acking on a channel the broker already force-closed (e.g. a
+    consumer-timeout case) throws. By the time this is called the job's
+    outcome is already durably committed to Postgres, so a failed ack
+    just means the broker may redeliver this message later — and that
+    redelivery is already a safe no-op per the claim mechanics
+    (DESIGN.md §3). Log it, don't crash the consumer loop over it."""
     try:
         channel.basic_ack(delivery_tag=delivery_tag)
     except Exception:
@@ -112,7 +110,7 @@ def _process_message(channel, method, body: bytes) -> None:
         job_id = payload["job_id"]
     except Exception:
         # Poison message — not even parseable as a job. Ack and drop
-        # rather than requeue-loop forever — EDGECASE.md 2.3.
+        # rather than requeue-loop forever.
         logger.error("unparseable message, dropping: %r", body)
         _safe_ack(channel, method.delivery_tag)
         return
@@ -144,7 +142,7 @@ def main() -> None:
     # when the queue is empty, instead of blocking indefinitely — that's
     # what lets us check _stop_event on a bounded schedule (not relying on
     # SIGTERM reliably interrupting a blocked socket wait), so shutdown
-    # is guaranteed within ~1s regardless of message flow. — EDGECASE.md 2.8 (graceful SIGTERM).
+    # is guaranteed within ~1s regardless of message flow (graceful SIGTERM shutdown).
     for method, properties, body in channel.consume(settings.QUEUE_NAME, inactivity_timeout=1):
         if _stop_event.is_set():
             break

@@ -1,4 +1,4 @@
-"""The `jobs` table — see DESIGN_QA.md Appendix for the annotated schema table."""
+"""The `jobs` table."""
 import uuid
 from datetime import datetime, timezone
 from enum import Enum as PyEnum

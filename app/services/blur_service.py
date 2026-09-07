@@ -14,12 +14,12 @@ RESULT_PRECISION = 4  # decimal places — see DESIGN.md determinism note
 
 class UnreadableImageError(ValueError):
     """Raised when cv2 can't decode the file at all (missing, corrupt,
-    not an image, a directory, etc.) — EDGECASE.md 1.3/1.4."""
+    not an image, a directory, etc.)."""
 
 
 def analyze_image(path: str, threshold: float, max_size_bytes: int) -> dict:
-    # EDGECASE.md 1.3 — cv2.imread on a directory/pipe/device returns
-    # None (silent) rather than raising, and a pipe/device can hang the
+    # cv2.imread on a directory/pipe/device returns None (silent)
+    # rather than raising, and a pipe/device can hang the
     # read forever; check isfile()/islink() *before* ever calling
     # cv2.imread so those cases fail fast and cleanly instead. (A
     # symlink pointing outside IMAGE_BASE_DIR is already rejected
@@ -31,8 +31,8 @@ def analyze_image(path: str, threshold: float, max_size_bytes: int) -> dict:
     if os.path.islink(path) or not os.path.isfile(path):
         raise UnreadableImageError(f"not a regular file: {path}")
 
-    # EDGECASE.md 1.5 — reject oversized files before decode, not after
-    # the worker OOMs on a 500MB TIFF or a decompression-bomb PNG.
+    # Reject oversized files before decode, not after the worker OOMs
+    # on a 500MB TIFF or a decompression-bomb PNG.
     size = os.path.getsize(path)
     if size > max_size_bytes:
         raise UnreadableImageError(f"image too large ({size} bytes > {max_size_bytes} byte limit): {path}")
@@ -40,9 +40,9 @@ def analyze_image(path: str, threshold: float, max_size_bytes: int) -> dict:
     # NumPy array is made here . Every number is a pixel intensity. Grayscale is used instead of rgb because blur detection doesnt need color 
     img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
     if img is None:
-        # cv2.imread fails by returning None, not by raising — EDGECASE.md
-        # 1.4 flags this explicitly as the thing to check for (corrupt
-        # file, zero-byte file, not actually an image despite the name).
+        # cv2.imread fails by returning None, not by raising — worth
+        # checking explicitly (corrupt file, zero-byte file, not
+        # actually an image despite the name).
         raise UnreadableImageError(f"unreadable or invalid image: {path}")
 
     # Compute the variance of the Laplacian (edge detector).

@@ -1,6 +1,6 @@
 """Data-access layer — every exactly-once-relevant statement lives here,
-matching the SQL in DESIGN.md / DESIGN_QA.md exactly. If you're checking
-the code against the docs, this is the file to look at.
+matching the SQL in DESIGN.md exactly. If you're checking the code
+against the docs, this is the file to look at.
 
 Timestamps are computed in Python (`_utcnow()`), never with a SQL
 `now()` literal, so the same code runs unchanged against Postgres in
@@ -103,8 +103,8 @@ def reclaim_stale(db: Session, timeout_seconds: int, max_attempts: int) -> int:
     """Reconciler Sweep 1 — DESIGN.md §5. Returns how many rows it touched
     (reclaimed for another try, or given up on for good).
 
-    EDGECASE.md 3.4: a job that crashes (or segfaults, EDGECASE.md 2.5)
-    every single worker that ever touches it must not be reclaimed and
+    A job that crashes (or segfaults) every single worker that ever
+    touches it must not be reclaimed and
     retried forever — that's an unbounded churn loop, one crashed
     worker at a time. It needs the same MAX_RETRIES cap the explicit
     (caught-exception) failure path already has in worker.py's

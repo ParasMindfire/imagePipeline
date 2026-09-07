@@ -1,8 +1,8 @@
 """Business logic layer — sits between the API and the repository.
 
-Path validation here is the fix for EDGECASE.md 1.2 (path traversal):
-image_path is always resolved against IMAGE_BASE_DIR and rejected if it
-would escape that directory.
+Path validation here guards against path traversal: image_path is
+always resolved against IMAGE_BASE_DIR and rejected if it would escape
+that directory.
 """
 from datetime import datetime
 from pathlib import Path
@@ -23,7 +23,7 @@ class InvalidImagePathError(ValueError):
 def resolve_image_path(image_path: str) -> Path:
     """Resolve image_path against IMAGE_BASE_DIR and reject anything that
     would escape it (../../etc/passwd, an absolute path elsewhere, a
-    symlink pointing out) — EDGECASE.md 1.2."""
+    symlink pointing out)."""
     base = Path(settings.IMAGE_BASE_DIR).resolve()
     candidate = (base / image_path).resolve()
     if candidate != base and base not in candidate.parents:
@@ -32,8 +32,8 @@ def resolve_image_path(image_path: str) -> Path:
 
 
 def create_job(db: Session, image_path: str, run_at: datetime | None):
-    # Validate before writing anything — EDGECASE.md 1.1/1.2: fail fast
-    # with a clean error instead of letting the worker discover it later.
+    # Validate before writing anything — fail fast with a clean error
+    # instead of letting the worker discover it later.
     resolve_image_path(image_path)
 
     job = job_repo.create_job(db, image_path=image_path, run_at=run_at)

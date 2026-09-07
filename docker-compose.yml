@@ -17,13 +17,13 @@ services:
     restart: unless-stopped
 
   rabbitmq:
-    image: rabbitmq:3-management  # stock image — no plugins needed, see DESIGN.md §7/DESIGN_QA.md Q5
+    image: rabbitmq:3-management  # stock image — no plugins needed, see DESIGN.md §7
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-jobs_app}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-change_me}
     ports:
       - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"  # dev-only UI — EDGECASE.md 4.6, don't expose this in a real deployment
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"  # dev-only UI — don't expose this in a real deployment
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 5s
@@ -59,8 +59,8 @@ services:
         condition: service_healthy
       api:
         condition: service_started
-    # restart: unless-stopped — EDGECASE.md 4.3: no manual reconnect
-    # logic is implemented for a dropped RabbitMQ connection (the
+    # restart: unless-stopped — no manual reconnect logic is
+    # implemented for a dropped RabbitMQ connection (the
     # worker's `channel.consume()` loop would raise and the process
     # would exit); Docker restarting the whole process is the simpler,
     # standard alternative to hand-rolled reconnect-with-backoff for

@@ -15,7 +15,7 @@ def create_job(payload: JobCreate, db: Session = Depends(get_db)):
     try:
         job = job_service.create_job(db, image_path=payload.image_path, run_at=payload.run_at)
     except InvalidImagePathError as exc:
-        # EDGECASE.md 1.2 — path traversal / escaping the allowed directory.
+        # Path traversal / escaping the allowed directory.
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     # Deliberately NOT job.status here: create_job() publishes to the
     # queue and marks the row enqueued before returning, and that
@@ -47,6 +47,6 @@ def list_jobs(
     status_value = status.value if status is not None else None
     items, total = job_service.list_jobs(db, status=status_value, limit=limit, offset=offset)
     # Echo back the *effective* limit (post server-side cap), not
-    # whatever was requested — EDGECASE.md 1.8.
+    # whatever was requested.
     effective_limit = min(limit, job_service.settings.MAX_PAGE_SIZE)
     return JobListResponse(items=items, total=total, limit=effective_limit, offset=offset)

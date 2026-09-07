@@ -12,16 +12,15 @@ app.include_router(api_router)
 
 @app.get("/health")
 def health():
-    """Process-alive check only — EDGECASE.md 5.3."""
+    """Process-alive check only."""
     return {"status": "ok"}
 
 
 @app.get("/ready")
 def ready():
     """Dependency check — Postgres and RabbitMQ both reachable, not just
-    the process being up (EDGECASE.md 5.3: an orchestrator routing
-    traffic on /health alone can't tell a broken instance from a healthy
-    one)."""
+    the process being up (an orchestrator routing traffic on /health
+    alone can't tell a broken instance from a healthy one)."""
     checks = {"database": False, "rabbitmq": False}
 
     try:

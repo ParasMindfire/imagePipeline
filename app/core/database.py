@@ -14,14 +14,14 @@ settings = get_settings()
 _connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
 _is_sqlite = settings.DATABASE_URL.startswith("sqlite")
 
-# pool_pre_ping — EDGECASE.md 2.4: a dead connection (Postgres restart,
-# network blip) gets detected and quietly replaced on next checkout,
-# instead of the next query failing with a stale-connection error.
-# pool_size kept small — EDGECASE.md 3.3: N workers × a generous
-# default pool can approach Postgres max_connections fast; each worker
-# only ever needs ~1 connection at a time (one job at a time,
-# DESIGN_QA.md Q10), so 2 is already generous headroom. Not meaningful
-# for SQLite (single file, no server-side connection limit to protect).
+# pool_pre_ping — a dead connection (Postgres restart, network blip)
+# gets detected and quietly replaced on next checkout, instead of the
+# next query failing with a stale-connection error.
+# pool_size kept small — N workers × a generous default pool can
+# approach Postgres max_connections fast; each worker only ever needs
+# ~1 connection at a time (one job at a time per process), so 2 is
+# already generous headroom. Not meaningful for SQLite (single file,
+# no server-side connection limit to protect).
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=_connect_args,

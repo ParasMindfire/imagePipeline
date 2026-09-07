@@ -1,7 +1,7 @@
 """Application configuration — loaded once from environment / .env.
 
-Every tunable named in DESIGN.md / DESIGN_QA.md lives here as a typed
-field, never hardcoded elsewhere in the app.
+Every tunable named in DESIGN.md lives here as a typed field, never
+hardcoded elsewhere in the app.
 """
 from functools import lru_cache
 
@@ -31,8 +31,8 @@ class Settings(BaseSettings):
 
     # --- Images ---
     # Container-internal base directory every image_path is resolved
-    # against and validated to stay inside (EDGECASE.md 1.2 — path
-    # traversal). The *host* folder that gets bind-mounted here is
+    # against and validated to stay inside (path-traversal protection).
+    # The *host* folder that gets bind-mounted here is
     # controlled separately, by SAMPLE_IMAGES_DIR, so people can keep
     # the actual image files out of git and just point this at
     # wherever they unzipped the shared sample_images/ folder.
@@ -42,8 +42,8 @@ class Settings(BaseSettings):
     # IMAGE_BASE_DIR, which is where that host path ends up *inside*
     # the container).
     SAMPLE_IMAGES_DIR: str = "./sample_images"
-    # EDGECASE.md 1.5 — reject before decode, not after the worker OOMs
-    # on a 500MB TIFF or a decompression-bomb PNG.
+    # Reject before decode, not after the worker OOMs on a 500MB TIFF
+    # or a decompression-bomb PNG.
     MAX_IMAGE_SIZE_BYTES: int = 20_000_000  # 20MB
 
     # --- API ---

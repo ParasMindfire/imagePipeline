@@ -12,7 +12,7 @@ def test_create_job_returns_pending(client, sample_image_path):
 
 
 def test_create_job_rejects_path_traversal(client):
-    # EDGECASE.md 1.2 — must not be able to escape IMAGE_BASE_DIR.
+    # Must not be able to escape IMAGE_BASE_DIR.
     resp = client.post("/jobs", json={"image_path": "../../etc/passwd"})
     assert resp.status_code == 400
 
@@ -50,7 +50,7 @@ def test_list_jobs_filters_by_status_and_paginates(client, sample_image_path):
 
 
 def test_list_jobs_limit_is_capped_server_side(client, sample_image_path):
-    # EDGECASE.md 1.8 — a client can't demand an unbounded page.
+    # A client can't demand an unbounded page.
     resp = client.get("/jobs?limit=999999")
     assert resp.status_code == 200
     assert resp.json()["limit"] <= 100

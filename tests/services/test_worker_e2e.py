@@ -1,8 +1,8 @@
 """Worker processes a job end-to-end (the assignment's third required
 test case), plus direct tests of the exactly-once mechanics themselves
-— the claim race and the attempts-fencing token (DESIGN.md §2.4 /
-DESIGN_QA.md Q16) — since those are the actual point of this system and
-deserve more than documentation.
+— the claim race and the attempts-fencing token (DESIGN.md §2.4) —
+since those are the actual point of this system and deserve more than
+documentation.
 """
 from datetime import datetime, timedelta, timezone
 
@@ -104,8 +104,8 @@ def test_claim_is_atomic_only_one_winner(db_session, sample_image_path):
 
 
 def test_terminal_write_is_fenced_by_attempts(db_session, sample_image_path):
-    """DESIGN.md §2.4 / DESIGN_QA.md Q16 — the zombie-worker scenario,
-    reproduced directly instead of only documented."""
+    """DESIGN.md §2.4 — the zombie-worker scenario, reproduced directly
+    instead of only documented."""
     job = job_repo.create_job(db_session, image_path=sample_image_path, run_at=None)
 
     worker_a = job_repo.claim_job(db_session, job.id)  # attempts=1, "worker A"'s generation
@@ -134,8 +134,8 @@ def test_terminal_write_is_fenced_by_attempts(db_session, sample_image_path):
 
 
 def test_reclaim_gives_up_after_max_attempts(db_session, sample_image_path):
-    """EDGECASE.md 3.4 — a job that crashes/hangs a worker every single
-    time must not be reclaimed and retried forever. Once attempts has
+    """A job that crashes/hangs a worker every single time must not be
+    reclaimed and retried forever. Once attempts has
     already reached max_attempts, reclaim_stale must mark it `failed`
     instead of resetting it back to `pending` yet again."""
     job = job_repo.create_job(db_session, image_path=sample_image_path, run_at=None)

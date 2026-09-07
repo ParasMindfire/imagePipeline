@@ -3,9 +3,8 @@
 RabbitMQ's only job is fair delivery to a free worker (DESIGN.md
 "Exactly-once processing") — it is never consulted for ownership
 decisions, so this module deliberately stays dumb: connect, declare,
-publish. No retry-topology, no delayed-message plugin — see
-DESIGN_QA.md Q4/Q5 for why those were rejected in favor of the
-reconciler.
+publish. No retry-topology, no delayed-message plugin — retries and
+scheduling are handled by the reconciler instead.
 """
 import json
 

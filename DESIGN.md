@@ -26,11 +26,11 @@ By the time a resurfacing zombie worker tries this, a later claim has already bu
 
 ## Queue choice: RabbitMQ
 
-A plain Postgres table (per the assignment's own hint) would also satisfy exactly-once — the claim UPDATE above doesn't need a broker to exist. RabbitMQ is used instead for push delivery (no polling tax on Postgres as worker count grows) and automatic redelivery on a dropped connection. Trade-offs argued in both directions, including a worked example quantifying the polling cost RabbitMQ avoids: `DESIGN_QA.md`, Q1.
+A plain Postgres table (per the assignment's own hint) would also satisfy exactly-once — the claim UPDATE above doesn't need a broker to exist. RabbitMQ is used instead for push delivery (no polling tax on Postgres as worker count grows) and automatic redelivery on a dropped connection. Trade-offs argued in both directions, including a worked example quantifying the polling cost RabbitMQ avoids.
 
 ## Bonus features (retries, crash recovery, scheduled jobs)
 
-All three turned out to be one mechanism: a `run_at` column plus a background reconciler thread (inside every worker) that (1) reclaims jobs stuck `processing` past a timeout and (2) republishes any `pending`, not-yet-enqueued job whose `run_at` has passed. A retry sets `run_at = now() + backoff` (2s/4s/8s, up to 3 attempts); a scheduled job sets `run_at` to the requested future time; a crash/hang reclaim resets `run_at` to null. No RabbitMQ dead-letter/TTL topology or delayed-message plugin needed. Rationale for rejecting those in favor of this: `DESIGN_QA.md`, Q4–Q5.
+All three turned out to be one mechanism: a `run_at` column plus a background reconciler thread (inside every worker) that (1) reclaims jobs stuck `processing` past a timeout and (2) republishes any `pending`, not-yet-enqueued job whose `run_at` has passed. A retry sets `run_at = now() + backoff` (2s/4s/8s, up to 3 attempts); a scheduled job sets `run_at` to the requested future time; a crash/hang reclaim resets `run_at` to null. No RabbitMQ dead-letter/TTL topology or delayed-message plugin needed.
 
 ## Blur detection & determinism
 
@@ -41,10 +41,7 @@ Variance of the Laplacian of the grayscale image, threshold **100.0** (`is_blurr
 - **`GET /jobs/{id}` includes `attempts` in the response**, in addition to the spec-listed `id`/`status`/`result`/`created_at`/`updated_at`. The spec doesn't list it, but `stress_test.py` is required to assert `attempts == 1` for every job and has no other way to read that value via the API.
 - **`GET /jobs` pagination is `?limit=&offset=`** (default `limit=20`, capped at `100` server-side regardless of what's requested), combined with the spec'd `?status=` filter.
 - `image_path` is a path already accessible **inside the worker container** (`sample_images/` is mounted read-only into `api` and `worker`, so paths line up across host and containers).
-- Postgres, not SQLite, for the Docker/multi-worker setup — SQLite's whole-file write lock forces unrelated workers to serialize against each other even when claiming different jobs; Postgres locks per-row. SQLite remains fine for running `tests/` without Docker. Full reasoning: `DESIGN_QA.md`, Q13.
+- Postgres, not SQLite, for the Docker/multi-worker setup — SQLite's whole-file write lock forces unrelated workers to serialize against each other even when claiming different jobs; Postgres locks per-row. SQLite remains fine for running `tests/` without Docker.
 - No auth, no multi-tenancy — matches assignment scope.
 - "Exactly-once" is guaranteed for the *effect* (a job's terminal state is written once), not for message delivery or for computation — a zombie worker's wasted CPU cycles are an accepted cost of the rare failure mode above, never its recorded result.
 - A `failed` job is not retried beyond `MAX_RETRIES` (bonus); without that bonus enabled, one failure is terminal.
-
----
-*Detailed rationale, alternatives considered, and a harsh edge-case pass live in `DESIGN_QA.md` and `EDGECASE.md` — not required deliverables, kept for the follow-up interview.*
