@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate sample images
+        run: python scripts/generate_sample_images.py
+
+      - name: Run tests
+        run: pytest tests/ -v
+        # tests/conftest.py points DATABASE_URL at a throwaway SQLite
+        # file — no Postgres/RabbitMQ service needed for this job.

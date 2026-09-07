@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-jobs_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-jobs}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-jobs_app}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management  # stock image — no plugins needed, see DESIGN.md §7/DESIGN_QA.md Q5
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-jobs_app}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-change_me}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"  # dev-only UI — EDGECASE.md 4.6, don't expose this in a real deployment
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: .
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    env_file: .env
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - ${SAMPLE_IMAGES_DIR:-./sample_images}:/app/sample_images:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build: .
+    command: python -m app.worker
+    env_file: .env
+    volumes:
+      - ${SAMPLE_IMAGES_DIR:-./sample_images}:/app/sample_images:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      api:
+        condition: service_started
+    # restart: unless-stopped — EDGECASE.md 4.3: no manual reconnect
+    # logic is implemented for a dropped RabbitMQ connection (the
+    # worker's `channel.consume()` loop would raise and the process
+    # would exit); Docker restarting the whole process is the simpler,
+    # standard alternative to hand-rolled reconnect-with-backoff for
+    # this scope, and it re-establishes a fresh connection on restart.
+    restart: unless-stopped
+    # No container_name here, and no fixed host port mapping — both are
+    # required for `docker compose up --scale worker=N` to work (DESIGN.md §8).
+
+volumes:
+  postgres_data:

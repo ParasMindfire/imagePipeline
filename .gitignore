@@ -1,0 +1,25 @@
+# Secrets / local config
+.env
+
+# Sample images — shared as a zip instead of pushed to git (see
+# README.md and SAMPLE_IMAGES_DIR in .env.example). Keep the generator
+# script tracked so anyone can regenerate them deterministically instead.
+sample_images/*
+!sample_images/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+.venv*/
+venv/
+
+# Local dev DB (SQLite, used only for tests/ without Docker)
+local_dev.db
+*.db-journal
+
+# OS
+.DS_Store
+Thumbs.db
